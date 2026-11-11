@@ -74,7 +74,7 @@ button { font: inherit; cursor: pointer; }
 .match { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .match .meta { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--muted); padding: 5px 8px 3px; text-transform: uppercase; letter-spacing: .06em; font-family: var(--display); font-weight: 600; }
 .team {
-  width: 100%; display: grid; grid-template-columns: 14px minmax(0,1fr) auto; align-items: center; gap: 7px;
+  width: 100%; display: grid; grid-template-columns: 18px minmax(0,1fr) auto; align-items: center; gap: 8px;
   padding: 7px 8px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--fg); text-align: left;
 }
 .team:disabled { cursor: default; }
@@ -88,7 +88,12 @@ button { font: inherit; cursor: pointer; }
 .team.loser .name, .team.loser .score { color: var(--lose); }
 .team.loser .chip { opacity: .4; }
 .team.tbd .name { color: var(--muted); font-weight: 500; font-style: italic; }
-.chip { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(127,127,127,.35); }
+.chip { width: 18px; height: 22px; display: block; }
+.chip svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.champ .crest { width: 44px; height: 54px; }
+.champ .crest svg { width: 100%; height: 100%; }
+.cup { width: 92px; height: auto; display: block; }
+.champ.has-w .cup { filter: drop-shadow(0 4px 10px rgba(184,134,11,.35)); }
 .home { font-family: var(--display); font-size: 10px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 3px; margin-left: 5px; vertical-align: 1px; }
 
 .final .match { border-color: var(--gold); border-width: 2px; }
@@ -100,8 +105,6 @@ button { font: inherit; cursor: pointer; }
 .champ .lbl { font-family: var(--display); text-transform: uppercase; letter-spacing: .16em; font-size: 12px; color: var(--gold); font-weight: 700; }
 .champ .who { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1; text-transform: uppercase; text-wrap: balance; }
 .champ .who.empty { color: var(--muted); font-size: 18px; font-weight: 600; }
-.champ svg { width: 34px; height: 34px; }
-.champ svg path { fill: var(--gold); }
 
 /* Probabilidades */
 .lower { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: start; }
@@ -109,7 +112,7 @@ button { font: inherit; cursor: pointer; }
 .panel h3 { font-family: var(--display); font-size: 20px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 2px; }
 .panel p.note { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
 .probs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 20px; }
-.prow { display: grid; grid-template-columns: 14px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: 14px; }
+.prow { display: grid; grid-template-columns: 18px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: 14px; }
 .prow .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; padding: 2px 0; }
 .prow .bar { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--accent); border-radius: 2px; }
 .prow .pct { font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
@@ -199,6 +202,14 @@ button { font: inherit; cursor: pointer; }
     hur: { n: "Huracán", z: "B", p: 8, pts: 22, c: ["#ffffff", "#e0001b"] },
   };
 
+  // Diseño de camiseta para el escudo genérico (no son los escudos oficiales).
+  const K = {
+    ins: "stripes", boc: "band", vel: "chevron", dyj: "halves", lan: "solid", nob: "halves", ind: "solid", gim: "stripes",
+    rca: "stripes", arg: "trim", glp: "band", riv: "sash", bar: "stripes", bel: "solid", ira: "solid", hur: "trim",
+  };
+  const INI = { ins: "IAC", boc: "CABJ", vel: "CAVS", dyj: "DyJ", lan: "CAL", nob: "NOB", ind: "CAI", gim: "GyE",
+    rca: "CARC", arg: "AAAJ", glp: "GELP", riv: "CARP", bar: "CABC", bel: "CAB", ira: "CSIR", hur: "CAH" };
+
   // Llave: src = equipo fijo o ganador de otro partido.
   const M = [
     { id: "O1", r: "Octavos", col: "ol", a: "ins", b: "hur" },
@@ -280,10 +291,22 @@ button { font: inherit; cursor: pointer; }
     return count;
   }
 
-  const chip = id => {
-    const c = T[id].c;
-    return `<span class="chip" style="background:linear-gradient(90deg, ${c[0]} 50%, ${c[1]} 50%)"></span>`;
-  };
+  let uid = 0;
+  function crest(id, big) {
+    const [a, b] = T[id].c, k = K[id], u = "s" + (uid++);
+    const shield = "M1 1.5h18v8.5c0 6.3-4.1 10.6-9 12.8C5.1 20.6 1 16.3 1 10z";
+    let fill = "";
+    if (k === "solid") fill = `<rect width="20" height="24" fill="${a}"/>`;
+    else if (k === "stripes") fill = `<rect width="20" height="24" fill="${b}"/>` + [1, 7, 13].map(x => `<rect x="${x + 1.6}" width="3.4" height="24" fill="${a}"/>`).join("");
+    else if (k === "halves") fill = `<rect width="10" height="24" fill="${a}"/><rect x="10" width="10" height="24" fill="${b}"/>`;
+    else if (k === "band") fill = `<rect width="20" height="24" fill="${a}"/><rect y="8" width="20" height="5.5" fill="${b}"/>`;
+    else if (k === "sash") fill = `<rect width="20" height="24" fill="${a}"/><path d="M-2 4 4 0 22 18 16 22z" fill="${b}"/>`;
+    else if (k === "chevron") fill = `<rect width="20" height="24" fill="${a}"/><path d="M1 3l9 8 9-8" fill="none" stroke="${b}" stroke-width="3.6"/>`;
+    else if (k === "trim") fill = `<rect width="20" height="24" fill="${a}"/><path d="${shield}" fill="none" stroke="${b}" stroke-width="3" transform="translate(10 12) scale(.8) translate(-10 -12)"/>`;
+    const text = big ? `<text x="10" y="${k === "band" ? 18.5 : 13.6}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="800" font-size="${INI[id].length > 3 ? 4.6 : 5.6}" fill="#ffffff" stroke="rgba(0,0,0,.6)" stroke-width=".5" paint-order="stroke">${INI[id]}</text>` : "";
+    return `<svg viewBox="0 0 20 24" aria-hidden="true"><defs><clipPath id="${u}"><path d="${shield}"/></clipPath></defs><g clip-path="url(#${u})">${fill}</g><path d="${shield}" fill="none" stroke="rgba(110,120,115,.7)" stroke-width="1"/>${text}</svg>`;
+  }
+  const chip = id => `<span class="chip">${crest(id)}</span>`;
   const seed = id => `${T[id].p}°${T[id].z}`;
 
   function teamBtn(m, id, other, pk, idx, isHome) {
@@ -310,7 +333,28 @@ button { font: inherit; cursor: pointer; }
     return `<div class="match">${meta}${teamBtn(m, a, b, pk, 0, homeA)}${teamBtn(m, b, a, pk, 1, false)}</div>`;
   }
 
-  const trophy = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v2H8v-2h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3V3Zm10 4v3a2 2 0 0 0 1-1.7V7h-1ZM6 7v1.3A2 2 0 0 0 7 10V7H6Zm-1 14h14v1H5v-1Z"/></svg>';
+  // Copa ilustrada (diseño propio, no la réplica del trofeo oficial).
+  const trophy = `<svg class="cup" viewBox="0 0 120 150" aria-hidden="true">
+    <defs>
+      <linearGradient id="cupG" x1="0" x2="1"><stop offset="0" stop-color="#8a6412"/><stop offset=".35" stop-color="#f6d77a"/><stop offset=".55" stop-color="#e2b23c"/><stop offset="1" stop-color="#7a560c"/></linearGradient>
+      <linearGradient id="cupS" x1="0" x2="1"><stop offset="0" stop-color="#9aa3a8"/><stop offset=".45" stop-color="#eef2f4"/><stop offset="1" stop-color="#7b8489"/></linearGradient>
+      <linearGradient id="baseG" x1="0" x2="1"><stop offset="0" stop-color="#2a2f33"/><stop offset=".5" stop-color="#4a5257"/><stop offset="1" stop-color="#1d2124"/></linearGradient>
+    </defs>
+    <path d="M26 30c-14 0-20 8-20 17 0 12 11 21 27 24" fill="none" stroke="url(#cupG)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M94 30c14 0 20 8 20 17 0 12-11 21-27 24" fill="none" stroke="url(#cupG)" stroke-width="6" stroke-linecap="round"/>
+    <path d="M22 14h76v12c0 30-16 50-38 54C38 76 22 56 22 26z" fill="url(#cupG)"/>
+    <ellipse cx="60" cy="14" rx="38" ry="5" fill="#f9e7a8"/>
+    <ellipse cx="60" cy="14" rx="33" ry="3" fill="#a87c18"/>
+    <path d="M30 30h60" stroke="#fff3c4" stroke-opacity=".6" stroke-width="2"/>
+    <path d="M60 36l3.2 6.6 7.2 1-5.2 5 1.3 7.2L60 52.4l-6.5 3.4 1.3-7.2-5.2-5 7.2-1z" fill="#fff6d0" fill-opacity=".85"/>
+    <path d="M52 80h16l-2 14h-12z" fill="url(#cupG)"/>
+    <ellipse cx="60" cy="96" rx="16" ry="4" fill="url(#cupS)"/>
+    <path d="M44 98h32l6 16H38z" fill="url(#cupG)"/>
+    <rect x="30" y="114" width="60" height="26" rx="3" fill="url(#baseG)"/>
+    <rect x="30" y="114" width="60" height="4" fill="url(#cupG)"/>
+    <rect x="40" y="123" width="40" height="9" rx="1.5" fill="url(#cupS)"/>
+    <text x="60" y="130" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="800" font-size="7" fill="#2a2f33" letter-spacing=".5">CLAUSURA 2026</text>
+  </svg>`;
 
   function render() {
     prune(); save();
@@ -320,7 +364,7 @@ button { font: inherit; cursor: pointer; }
       let inner = ms.map(matchHTML).join("");
       if (col === "f") {
         const w = picks.F && picks.F.w;
-        inner = `<div class="champ"><span class="lbl">Campeón</span>${trophy}<span class="who ${w ? "" : "empty"}">${w ? T[w].n : "A definir"}</span></div>` + inner;
+        inner = `<div class="champ ${w ? "has-w" : ""}"><span class="lbl">Campeón</span>${trophy}${w ? `<span class="crest">${crest(w, true)}</span>` : ""}<span class="who ${w ? "" : "empty"}">${w ? T[w].n : "A definir"}</span></div>` + inner;
       }
       const side = col.endsWith("l") ? " · Lado 1" : col.endsWith("r") ? " · Lado 2" : "";
       return `<div class="col c-${col}${col === "f" ? " final" : ""}"><h2>${title}${side}</h2><div class="stack">${inner}</div></div>`;
