@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Simulador de la llave de playoffs del Torneo Clausura 2026 de la Liga Profesional Argentina.">
+<meta property="og:title" content="Llave del Clausura 2026">
+<meta property="og:description" content="Armá tu llave del Clausura 2026, de octavos a la final, y mirá las chances de cada equipo.">
+<meta name="theme-color" content="#1f6fb8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23b8860b' d='M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v2H8v-2h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3V3Z'/></svg>">
+<style>:root{color-scheme:light}html,body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Llave Clausura 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: estadio de noche / planilla de tablero — llave en 7 columnas que convergen a la final; en el teléfono, rondas apiladas */
+:root {
+  --bg: #f3f5f2;
+  --surface: #ffffff;
+  --line: #d5dcd6;
+  --fg: #14211b;
+  --muted: #5d6b63;
+  --accent: #1f6fb8;      /* celeste AFA profundo */
+  --accent-soft: #e2eef9;
+  --gold: #b8860b;
+  --gold-soft: #fbf1d6;
+  --win: #14211b;
+  --lose: #9aa59f;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1512; --surface: #15211c; --line: #26362f; --fg: #e8efe9; --muted: #8fa198;
+    --accent: #6fb3ee; --accent-soft: #15283a; --gold: #e8b93c; --gold-soft: #2c2410;
+    --win: #f2f6f3; --lose: #5d6d65; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1512; --surface: #15211c; --line: #26362f; --fg: #e8efe9; --muted: #8fa198;
+  --accent: #6fb3ee; --accent-soft: #15283a; --gold: #e8b93c; --gold-soft: #2c2410;
+  --win: #f2f6f3; --lose: #5d6d65; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.45;
+}
+.wrap {
+  max-width: 1320px; margin: 0 auto;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 24px;
+}
+header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.eyebrow { font-family: var(--display); text-transform: uppercase; letter-spacing: .14em; font-weight: 600; color: var(--accent); font-size: 14px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: clamp(36px, 6vw, 60px); line-height: .95; margin: 4px 0 6px; text-transform: uppercase; letter-spacing: .01em; text-wrap: balance; }
+.sub { color: var(--muted); max-width: 62ch; margin: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+button { font: inherit; cursor: pointer; }
+.btn {
+  font-family: var(--display); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; font-size: 15px;
+  padding: 10px 16px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.btn:hover { border-color: var(--accent); }
+.btn:focus-visible, .team:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Llave */
+.bracket { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; align-items: stretch; }
+.col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.col h2 { font-family: var(--display); font-size: 13px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); margin: 0 0 2px; font-weight: 600; text-align: center; }
+.col .stack { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 12px; }
+.match { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.match .meta { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--muted); padding: 5px 8px 3px; text-transform: uppercase; letter-spacing: .06em; font-family: var(--display); font-weight: 600; }
+.team {
+  width: 100%; display: grid; grid-template-columns: 14px minmax(0,1fr) auto; align-items: center; gap: 7px;
+  padding: 7px 8px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--fg); text-align: left;
+}
+.team:disabled { cursor: default; }
+.team .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.team .seed { font-family: var(--display); font-size: 12px; color: var(--muted); font-weight: 600; margin-left: 4px; }
+.team .score { font-family: var(--display); font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums; min-width: 1.4em; text-align: right; }
+.team .score small { font-size: 11px; color: var(--muted); font-weight: 600; }
+.team:not(:disabled):hover { background: var(--accent-soft); }
+.team.winner { background: var(--accent-soft); }
+.team.winner .name { color: var(--win); }
+.team.loser .name, .team.loser .score { color: var(--lose); }
+.team.loser .chip { opacity: .4; }
+.team.tbd .name { color: var(--muted); font-weight: 500; font-style: italic; }
+.chip { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(127,127,127,.35); }
+.home { font-family: var(--display); font-size: 10px; font-weight: 700; color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 3px; margin-left: 5px; vertical-align: 1px; }
+
+.final .match { border-color: var(--gold); border-width: 2px; }
+.final .match .meta { color: var(--gold); }
+.champ {
+  border: 2px solid var(--gold); background: var(--gold-soft); border-radius: 10px; padding: 14px 12px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.champ .lbl { font-family: var(--display); text-transform: uppercase; letter-spacing: .16em; font-size: 12px; color: var(--gold); font-weight: 700; }
+.champ .who { font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1; text-transform: uppercase; text-wrap: balance; }
+.champ .who.empty { color: var(--muted); font-size: 18px; font-weight: 600; }
+.champ svg { width: 34px; height: 34px; }
+.champ svg path { fill: var(--gold); }
+
+/* Probabilidades */
+.lower { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+.panel h3 { font-family: var(--display); font-size: 20px; text-transform: uppercase; letter-spacing: .04em; margin: 0 0 2px; }
+.panel p.note { color: var(--muted); margin: 0 0 12px; font-size: 13px; }
+.probs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 4px 20px; }
+.prow { display: grid; grid-template-columns: 14px minmax(0, 1fr) 46px; gap: 8px; align-items: center; font-size: 14px; }
+.prow .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; padding: 2px 0; }
+.prow .bar { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--accent); border-radius: 2px; }
+.prow .pct { font-family: var(--display); font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+.prow.out { color: var(--lose); }
+.rules { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.rules b { font-weight: 600; }
+.foot { color: var(--muted); font-size: 12.5px; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-weight: 600; }
+
+@media (max-width: 1100px) {
+  .bracket { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .c-ol { order: 1; } .c-or { order: 2; } .c-cl { order: 3; } .c-cr { order: 4; }
+  .c-sl { order: 5; } .c-sr { order: 6; } .c-f { order: 7; grid-column: 1 / -1; }
+  .c-f .stack { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .c-f .stack > * { flex: 1 1 260px; max-width: 360px; }
+  .lower { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .bracket { grid-template-columns: minmax(0, 1fr); }
+  .c-f { grid-column: auto; }
+  .probs { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .team { transition: background-color .15s; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Liga Profesional · Fase final</div>
+      <h1>Llave del Clausura 2026</h1>
+      <p class="sub">Tocá un equipo para hacerlo avanzar, o simulá los partidos que faltan. Los cruces de octavos son los confirmados tras la fecha 16. Tocá de nuevo al ganador para deshacer.</p>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="btn-sim">Simular lo que falta</button>
+      <button class="btn" id="btn-copy">Copiar mi llave</button>
+      <button class="btn" id="btn-reset">Reiniciar</button>
+    </div>
+  </header>
+
+  <section class="bracket" id="bracket" aria-label="Llave de playoffs"></section>
+
+  <section class="lower">
+    <div class="panel">
+      <h3>Chances de salir campeón</h3>
+      <p class="note" id="prob-note">20.000 simulaciones con tus elecciones fijas. Modelo simple: fuerza según puntos de la fase regular y ventaja de local.</p>
+      <div class="probs" id="probs"></div>
+    </div>
+    <div class="panel">
+      <h3>Cómo se juega</h3>
+      <ul class="rules">
+        <li><b>Partido único</b> en octavos, cuartos y semis. Si hay empate, se define por penales.</li>
+        <li><b>Localía</b> para el mejor ubicado en su zona (marcado con <span class="home">L</span>).</li>
+        <li><b>Octavos:</b> sábado 21 y domingo 22 de noviembre. Boca–Ind. Rivadavia, el miércoles 25.</li>
+        <li><b>Final:</b> sábado 12 de diciembre en La Plata, en cancha neutral. Empate: alargue y penales.</li>
+        <li>Boca y River están en lados opuestos: solo podría haber Superclásico en la final. Central y Newell's se pueden cruzar en semis.</li>
+      </ul>
+    </div>
+  </section>
+
+  <p class="foot">Cruces de octavos según lo publicado el 9 de noviembre de 2026. El camino de cuartos y semis sigue el formato del cuadro oficial; si la Liga lo cambia, avisá y se ajusta. Las simulaciones son un juego, no un pronóstico.</p>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function () {
+  // Equipos clasificados. pts: puntos en la zona (para 6°–8° de la Zona A son estimados, solo para el modelo).
+  const T = {
+    ins: { n: "Instituto", z: "A", p: 1, pts: 34, c: ["#c8102e", "#ffffff"] },
+    boc: { n: "Boca Juniors", z: "A", p: 2, pts: 33, c: ["#0b3b8f", "#f2b800"] },
+    vel: { n: "Vélez", z: "A", p: 3, pts: 28, c: ["#ffffff", "#1f4fa0"] },
+    dyj: { n: "Defensa y Justicia", z: "A", p: 4, pts: 28, c: ["#00843d", "#f2d200"] },
+    lan: { n: "Lanús", z: "A", p: 5, pts: 26, c: ["#7a1f2b", "#7a1f2b"] },
+    nob: { n: "Newell's", z: "A", p: 6, pts: 25, c: ["#d0102a", "#111111"] },
+    ind: { n: "Independiente", z: "A", p: 7, pts: 24, c: ["#d7182a", "#d7182a"] },
+    gim: { n: "Gimnasia (M)", z: "A", p: 8, pts: 23, c: ["#111111", "#ffffff"] },
+    rca: { n: "Rosario Central", z: "B", p: 1, pts: 34, c: ["#0a3a82", "#f5c400"] },
+    arg: { n: "Argentinos Juniors", z: "B", p: 2, pts: 31, c: ["#d6001c", "#ffffff"] },
+    glp: { n: "Gimnasia (LP)", z: "B", p: 3, pts: 31, c: ["#ffffff", "#0b2a5b"] },
+    riv: { n: "River Plate", z: "B", p: 4, pts: 26, c: ["#ffffff", "#e2001a"] },
+    bar: { n: "Barracas Central", z: "B", p: 5, pts: 26, c: ["#d1001f", "#ffffff"] },
+    bel: { n: "Belgrano", z: "B", p: 6, pts: 23, c: ["#5aa8e0", "#5aa8e0"] },
+    ira: { n: "Ind. Rivadavia", z: "B", p: 7, pts: 23, c: ["#1d3f8b", "#1d3f8b"] },
+    hur: { n: "Huracán", z: "B", p: 8, pts: 22, c: ["#ffffff", "#e0001b"] },
+  };
+
+  // Llave: src = equipo fijo o ganador de otro partido.
+  const M = [
+    { id: "O1", r: "Octavos", col: "ol", a: "ins", b: "hur" },
+    { id: "O2", r: "Octavos", col: "ol", a: "riv", b: "lan" },
+    { id: "O3", r: "Octavos", col: "ol", a: "arg", b: "ind" },
+    { id: "O4", r: "Octavos", col: "ol", a: "vel", b: "bel" },
+    { id: "O5", r: "Octavos", col: "or", a: "rca", b: "gim" },
+    { id: "O6", r: "Octavos", col: "or", a: "dyj", b: "bar" },
+    { id: "O7", r: "Octavos", col: "or", a: "boc", b: "ira", date: "Mié 25/11" },
+    { id: "O8", r: "Octavos", col: "or", a: "glp", b: "nob" },
+    { id: "C1", r: "Cuartos", col: "cl", a: "@O1", b: "@O2" },
+    { id: "C2", r: "Cuartos", col: "cl", a: "@O3", b: "@O4" },
+    { id: "C3", r: "Cuartos", col: "cr", a: "@O5", b: "@O6" },
+    { id: "C4", r: "Cuartos", col: "cr", a: "@O7", b: "@O8" },
+    { id: "S1", r: "Semifinal", col: "sl", a: "@C1", b: "@C2" },
+    { id: "S2", r: "Semifinal", col: "sr", a: "@C3", b: "@C4" },
+    { id: "F", r: "Final", col: "f", a: "@S1", b: "@S2", neutral: true, date: "Sáb 12/12 · La Plata" },
+  ];
+  const byId = Object.fromEntries(M.map(m => [m.id, m]));
+  const COLS = [
+    ["ol", "Octavos"], ["cl", "Cuartos"], ["sl", "Semifinal"], ["f", "Final"],
+    ["sr", "Semifinal"], ["cr", "Cuartos"], ["or", "Octavos"],
+  ];
+
+  const KEY = "llave-clausura-2026";
+  let picks = {};   // id -> { w: teamId, s: [ga, gb], pen?: [pa, pb] }
+  try { picks = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { picks = {}; }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(picks)); } catch (e) {} };
+
+  // Mejor ubicado: posición en la zona, luego puntos.
+  const better = (x, y) => (T[x].p !== T[y].p ? T[x].p < T[y].p : T[x].pts >= T[y].pts);
+
+  function sides(m, pk) {
+    const res = s => (s[0] === "@" ? (pk[s.slice(1)] ? pk[s.slice(1)].w : null) : s);
+    let a = res(m.a), b = res(m.b);
+    if (a && b && !m.neutral && !better(a, b)) [a, b] = [b, a]; // local primero
+    return [a, b];
+  }
+
+  // Quita elecciones que ya no son válidas aguas abajo.
+  function prune() {
+    for (const m of M) {
+      const pk = picks[m.id];
+      if (!pk) continue;
+      const [a, b] = sides(m, picks);
+      if (pk.w !== a && pk.w !== b) delete picks[m.id];
+      else if (pk.s && pk.order && (pk.order[0] !== a || pk.order[1] !== b)) delete picks[m.id].s;
+    }
+  }
+
+  // Modelo de goles (Poisson) según diferencia de puntos y localía.
+  function poisson(l) { const L = Math.exp(-l); let k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L); return k - 1; }
+  function play(a, b, neutral) {
+    const d = (T[a].pts - T[b].pts) * 0.035 + (neutral ? 0 : 0.18);
+    const ga = poisson(1.15 * Math.exp(d / 2)), gb = poisson(1.15 * Math.exp(-d / 2));
+    if (ga !== gb) return { w: ga > gb ? a : b, s: [ga, gb], order: [a, b] };
+    let pa = 0, pb = 0;
+    for (let i = 0; i < 5; i++) { if (Math.random() < .76) pa++; if (Math.random() < .74) pb++; }
+    while (pa === pb) { if (Math.random() < .76) pa++; if (Math.random() < .74) pb++; }
+    return { w: pa > pb ? a : b, s: [ga, gb], pen: [pa, pb], order: [a, b] };
+  }
+
+  // Monte Carlo respetando las elecciones del usuario.
+  function champOdds(n) {
+    const count = {};
+    for (let i = 0; i < n; i++) {
+      const w = {};
+      for (const m of M) {
+        if (picks[m.id]) { w[m.id] = picks[m.id].w; continue; }
+        const res = s => (s[0] === "@" ? w[s.slice(1)] : s);
+        let a = res(m.a), b = res(m.b);
+        if (!m.neutral && !better(a, b)) [a, b] = [b, a];
+        const d = (T[a].pts - T[b].pts) * 0.035 + (m.neutral ? 0 : 0.18);
+        const ga = poisson(1.15 * Math.exp(d / 2)), gb = poisson(1.15 * Math.exp(-d / 2));
+        w[m.id] = ga > gb ? a : gb > ga ? b : (Math.random() < .5 ? a : b);
+      }
+      count[w.F] = (count[w.F] || 0) + 1;
+    }
+    return count;
+  }
+
+  const chip = id => {
+    const c = T[id].c;
+    return `<span class="chip" style="background:linear-gradient(90deg, ${c[0]} 50%, ${c[1]} 50%)"></span>`;
+  };
+  const seed = id => `${T[id].p}°${T[id].z}`;
+
+  function teamBtn(m, id, other, pk, idx, isHome) {
+    if (!id) {
+      const src = idx === 0 ? m.a : m.b;
+      return `<button class="team tbd" disabled><span></span><span class="name">Ganador ${src.slice(1)}</span><span class="score"></span></button>`;
+    }
+    const cls = pk ? (pk.w === id ? "winner" : "loser") : "";
+    let score = "";
+    if (pk && pk.s && pk.order) {
+      const i = pk.order.indexOf(id);
+      score = pk.s[i] + (pk.pen ? ` <small>(${pk.pen[i]})</small>` : "");
+    } else if (pk && pk.w === id) score = "✓";
+    const label = `${T[id].n}, ${seed(id)}` + (pk && pk.w === id ? " — ganador, tocá para deshacer" : " — elegir como ganador");
+    return `<button class="team ${cls}" data-m="${m.id}" data-t="${id}" ${other ? "" : "disabled"} aria-label="${label}">
+      ${chip(id)}<span class="name">${T[id].n}<span class="seed">${seed(id)}</span>${isHome ? '<span class="home" title="Local">L</span>' : ""}</span><span class="score">${score}</span></button>`;
+  }
+
+  function matchHTML(m) {
+    const [a, b] = sides(m, picks);
+    const pk = picks[m.id];
+    const meta = `<div class="meta"><span>${m.id === "F" ? "Final" : m.id}</span><span>${m.date || (m.r === "Octavos" ? "21–22/11" : "")}</span></div>`;
+    const homeA = !m.neutral && a && b;
+    return `<div class="match">${meta}${teamBtn(m, a, b, pk, 0, homeA)}${teamBtn(m, b, a, pk, 1, false)}</div>`;
+  }
+
+  const trophy = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10v2h3v3a4 4 0 0 1-4 4h-.3A5 5 0 0 1 13 14.9V17h3v2H8v-2h3v-2.1A5 5 0 0 1 8.3 12H8a4 4 0 0 1-4-4V5h3V3Zm10 4v3a2 2 0 0 0 1-1.7V7h-1ZM6 7v1.3A2 2 0 0 0 7 10V7H6Zm-1 14h14v1H5v-1Z"/></svg>';
+
+  function render() {
+    prune(); save();
+    const el = document.getElementById("bracket");
+    el.innerHTML = COLS.map(([col, title]) => {
+      const ms = M.filter(m => m.col === col);
+      let inner = ms.map(matchHTML).join("");
+      if (col === "f") {
+        const w = picks.F && picks.F.w;
+        inner = `<div class="champ"><span class="lbl">Campeón</span>${trophy}<span class="who ${w ? "" : "empty"}">${w ? T[w].n : "A definir"}</span></div>` + inner;
+      }
+      const side = col.endsWith("l") ? " · Lado 1" : col.endsWith("r") ? " · Lado 2" : "";
+      return `<div class="col c-${col}${col === "f" ? " final" : ""}"><h2>${title}${side}</h2><div class="stack">${inner}</div></div>`;
+    }).join("");
+    renderOdds();
+  }
+
+  function renderOdds() {
+    const N = 20000, c = champOdds(N);
+    const ids = Object.keys(T).sort((x, y) => (c[y] || 0) - (c[x] || 0) || T[y].pts - T[x].pts);
+    const max = Math.max(...ids.map(i => c[i] || 0)) || 1;
+    document.getElementById("probs").innerHTML = ids.map(id => {
+      const v = (c[id] || 0) / N * 100;
+      const txt = v === 0 ? "—" : v >= 99.95 ? "100%" : v < 0.1 ? "<0,1%" : v.toFixed(1).replace(".", ",") + "%";
+      return `<div class="prow ${v === 0 ? "out" : ""}">${chip(id)}<span class="nm">${T[id].n}<span class="bar" style="width:${(c[id] || 0) / max * 100}%"></span></span><span class="pct">${txt}</span></div>`;
+    }).join("");
+  }
+
+  document.getElementById("bracket").addEventListener("click", e => {
+    const btn = e.target.closest(".team[data-t]");
+    if (!btn || btn.disabled) return;
+    const id = btn.dataset.m, t = btn.dataset.t;
+    if (picks[id] && picks[id].w === t) delete picks[id];
+    else picks[id] = { w: t };
+    render();
+  });
+
+  document.getElementById("btn-sim").addEventListener("click", () => {
+    for (const m of M) {
+      if (picks[m.id]) continue;
+      const [a, b] = sides(m, picks);
+      picks[m.id] = play(a, b, m.neutral);
+    }
+    render();
+  });
+
+  document.getElementById("btn-reset").addEventListener("click", () => { picks = {}; render(); toast("Llave reiniciada"); });
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 1800);
+  }
+
+  function summary() {
+    const lines = ["Mi llave del Clausura 2026"];
+    let last = "";
+    for (const m of M) {
+      if (m.r !== last) { lines.push("", m.r.toUpperCase()); last = m.r; }
+      const [a, b] = sides(m, picks);
+      const pk = picks[m.id];
+      const name = x => (x ? T[x].n : "?");
+      let line = `${name(a)} vs ${name(b)}`;
+      if (pk) {
+        if (pk.s && pk.order) line = `${name(pk.order[0])} ${pk.s[0]}-${pk.s[1]} ${name(pk.order[1])}` + (pk.pen ? ` (pen. ${pk.pen[0]}-${pk.pen[1]})` : "");
+        line += ` → ${name(pk.w)}`;
+      }
+      lines.push(line);
+    }
+    lines.push("", "Campeón: " + (picks.F ? T[picks.F.w].n : "a definir"));
+    return lines.join("\n");
+  }
+
+  document.getElementById("btn-copy").addEventListener("click", () => {
+    const text = summary();
+    const fallback = () => {
+      const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+      ta.remove(); toast(ok ? "Llave copiada" : "No se pudo copiar");
+    };
+    try {
+      navigator.clipboard.writeText(text).then(() => toast("Llave copiada"), fallback);
+    } catch (e) { fallback(); }
+  });
+
+  render();
+})();
+</script>
+
+</body>
+</html>
